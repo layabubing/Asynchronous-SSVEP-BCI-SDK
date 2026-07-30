@@ -1,13 +1,12 @@
 # 无训练异步 SSVEP-BCI
 
+![Static Badge](https://img.shields.io/badge/License-Apache2.0-green)
+![Static Badge](https://img.shields.io/badge/Python-3.x-blue)
+
 这是一个面向实时工程集成的 Python 实现：用 CCA 或 FBCCA 完成无需训练的
 SSVEP 频率识别，再用独立的异步状态机识别控制/非控制状态。系统不会在每个
 分析窗中强制输出命令；只有候选频率同时通过绝对分数、类间裕量和连续驻留判定，
 才产生一次 `activated` 事件。
-
-> 本项目是算法与工程组件，不是医疗器械。默认阈值可直接运行，但电极布局、
-> 放大器、刺激器、窗口长度和现场噪声都会改变误触率；部署前必须用真实设备的
-> 控制/空闲数据做验证。调阈值不涉及模型拟合，算法仍是无训练的。
 
 ## 特性
 
