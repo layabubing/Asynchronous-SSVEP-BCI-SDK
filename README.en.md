@@ -2,19 +2,15 @@
 
 # Training-Free Asynchronous SSVEP-BCI
 
+![Static Badge](https://img.shields.io/badge/License-Apache2.0-green)
+![Static Badge](https://img.shields.io/badge/Python-3.x-blue)
+
 A Python implementation aimed at real-time engineering integration: CCA or
 FBCCA performs training-free SSVEP frequency recognition, and a separate
 asynchronous state machine distinguishes control from non-control states. The
 system never forces a command output in every analysis window; an `activated`
 event is emitted only when a candidate frequency passes the absolute score, the
 inter-class margin, and the continuous dwell criteria at the same time.
-
-> This project is an algorithmic and engineering component, not a medical
-> device. The default thresholds can be used as-is, but electrode placement,
-> amplifiers, stimulators, window length, and on-site noise all change the
-> false-trigger rate. Validate with real-device control/idle data before
-> deployment. Tuning thresholds does not involve model fitting; the algorithm
-> remains training-free.
 
 ## Features
 
