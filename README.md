@@ -1,3 +1,5 @@
+[English](README.en.md) | [中文](README.md)
+
 # 无训练异步 SSVEP-BCI
 
 这是一个面向实时工程集成的 Python 实现：用 CCA 或 FBCCA 完成无需训练的
