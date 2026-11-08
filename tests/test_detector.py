@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 
 from async_ssvep import SSVEPConfig, TrainingFreeSSVEPDetector
+from async_ssvep.cca import harmonic_reference, largest_canonical_correlation
+from async_ssvep.filters import FilterBank, detrend_and_notch
 
 
 def synthetic_ssvep(
@@ -39,6 +41,31 @@ def test_detector_finds_frequency_without_training(algorithm: str) -> None:
     assert result.best_score > 0.5
     assert result.relative_margin > 0.2
     assert result.quality.valid
+
+
+def test_cached_bases_match_direct_cca_at_four_channels_and_1000_hz() -> None:
+    config = SSVEPConfig(
+        sampling_rate=1000,
+        frequencies=(6.0, 7.5, 9.0, 10.0, 12.0, 15.0, 20.0),
+        notch_hz=50.0,
+    )
+    eeg = synthetic_ssvep(15.0, sampling_rate=1000)
+    result = TrainingFreeSSVEPDetector(config).detect(eeg)
+    bank = FilterBank(config)
+    expected = np.zeros(len(config.frequencies))
+    for weight, subband in zip(
+        bank.weights, bank.apply(detrend_and_notch(eeg, config)), strict=True
+    ):
+        expected += weight * np.asarray(
+            [
+                largest_canonical_correlation(
+                    subband, harmonic_reference(frequency, 1000, 1000, config.harmonics)
+                )
+                ** 2
+                for frequency in config.frequencies
+            ]
+        )
+    np.testing.assert_allclose(result.scores, expected, rtol=1e-12, atol=1e-12)
 
 
 def test_flat_window_fails_closed() -> None:

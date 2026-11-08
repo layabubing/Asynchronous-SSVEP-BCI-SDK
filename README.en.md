@@ -24,6 +24,8 @@ inter-class margin, and the continuous dwell criteria at the same time.
 - Channel-level fault tolerance: rejects channels containing NaN/Inf or flat
   signals; fails closed when usable channels are insufficient, returning a
   non-control output without emitting commands.
+- Cached computation: fixed reference bases are prepared once, and each EEG
+  sub-band basis is computed once per window.
 - Numerical stability: SVD-subspace-based CCA without explicit covariance
   inversion; supports rank-deficient channels.
 - Streaming interface: accepts arbitrary-length `[channels, samples]` data

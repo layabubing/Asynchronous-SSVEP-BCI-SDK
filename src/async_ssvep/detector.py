@@ -1,11 +1,13 @@
-"""Training-free CCA and FBCCA frequency detector."""
-
 from __future__ import annotations
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from .cca import harmonic_reference, largest_canonical_correlation
+from .cca import (
+    canonical_correlation_from_bases,
+    harmonic_reference,
+    orthonormal_time_basis,
+)
 from .config import SSVEPConfig
 from .filters import CCAFilter, FilterBank, detrend_and_notch
 from .types import DetectionResult, SignalQuality
@@ -27,8 +29,22 @@ class TrainingFreeSSVEPDetector:
             )
             for frequency in config.frequencies
         )
+        self._reference_bases = tuple(
+            orthonormal_time_basis(reference, config.rank_tolerance)
+            for reference in self._references
+        )
         self._filterbank = FilterBank(config) if config.algorithm == "fbcca" else None
         self._cca_filter = CCAFilter(config) if config.algorithm == "cca" else None
+
+    def _scores(self, filtered: FloatArray) -> FloatArray:
+        basis = orthonormal_time_basis(filtered, self.config.rank_tolerance)
+        return np.asarray(
+            [
+                canonical_correlation_from_bases(basis, reference) ** 2
+                for reference in self._reference_bases
+            ],
+            dtype=np.float64,
+        )
 
     def _quality(self, eeg: FloatArray) -> SignalQuality:
         channel_count = eeg.shape[0]
@@ -97,18 +113,7 @@ class TrainingFreeSSVEPDetector:
         if self.config.algorithm == "cca":
             assert self._cca_filter is not None
             filtered = self._cca_filter.apply(preprocessed)
-            scores = np.asarray(
-                [
-                    largest_canonical_correlation(
-                        filtered,
-                        reference,
-                        tolerance=self.config.rank_tolerance,
-                    )
-                    ** 2
-                    for reference in self._references
-                ],
-                dtype=np.float64,
-            )
+            scores = self._scores(filtered)
         else:
             assert self._filterbank is not None
             subbands = self._filterbank.apply(preprocessed)
@@ -118,18 +123,7 @@ class TrainingFreeSSVEPDetector:
                 subbands,
                 strict=True,
             ):
-                scores += weight * np.asarray(
-                    [
-                        largest_canonical_correlation(
-                            subband,
-                            reference,
-                            tolerance=self.config.rank_tolerance,
-                        )
-                        ** 2
-                        for reference in self._references
-                    ],
-                    dtype=np.float64,
-                )
+                scores += weight * self._scores(subband)
 
         best_index = int(np.argmax(scores))
         best_score = float(scores[best_index])

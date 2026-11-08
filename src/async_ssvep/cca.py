@@ -1,5 +1,3 @@
-"""Numerically stable canonical-correlation primitives."""
-
 from __future__ import annotations
 
 import numpy as np
@@ -27,7 +25,7 @@ def harmonic_reference(
     return np.asarray(rows, dtype=np.float64)
 
 
-def _orthonormal_time_basis(matrix: FloatArray, tolerance: float | None) -> FloatArray:
+def orthonormal_time_basis(matrix: FloatArray, tolerance: float | None) -> FloatArray:
     observations = np.asarray(matrix, dtype=np.float64).T
     observations = observations - observations.mean(axis=0, keepdims=True)
     left, singular_values, _ = np.linalg.svd(observations, full_matrices=False)
@@ -62,8 +60,12 @@ def largest_canonical_correlation(
     if first.shape[1] != second.shape[1]:
         raise ValueError("CCA inputs must have the same number of samples")
 
-    first_basis = _orthonormal_time_basis(first, tolerance)
-    second_basis = _orthonormal_time_basis(second, tolerance)
+    first_basis = orthonormal_time_basis(first, tolerance)
+    second_basis = orthonormal_time_basis(second, tolerance)
+    return canonical_correlation_from_bases(first_basis, second_basis)
+
+
+def canonical_correlation_from_bases(first_basis: FloatArray, second_basis: FloatArray) -> float:
     if first_basis.shape[1] == 0 or second_basis.shape[1] == 0:
         return 0.0
 
