@@ -1,5 +1,3 @@
-"""Deterministic asynchronous control/no-control state machine."""
-
 from __future__ import annotations
 
 from .config import SSVEPConfig
@@ -68,12 +66,40 @@ class AsynchronousGate:
         if self._state is DecisionState.ACTIVE:
             if observed == self._active:
                 self._release_count = 0
+                self._candidate = None
+                self._candidate_count = 0
                 return self._decision(
                     detection,
                     sample_end=sample_end,
                     time_seconds=time_seconds,
                 )
 
+            if observed is not None:
+                self._release_count = 0
+                if observed == self._candidate:
+                    self._candidate_count += 1
+                else:
+                    self._candidate = observed
+                    self._candidate_count = 1
+                if self._candidate_count >= self.config.dwell_windows:
+                    self._active = observed
+                    self._candidate = None
+                    self._candidate_count = 0
+                    return self._decision(
+                        detection,
+                        sample_end=sample_end,
+                        time_seconds=time_seconds,
+                        event=DecisionEvent.ACTIVATED,
+                        command_frequency=observed,
+                    )
+                return self._decision(
+                    detection,
+                    sample_end=sample_end,
+                    time_seconds=time_seconds,
+                )
+
+            self._candidate = None
+            self._candidate_count = 0
             self._release_count += 1
             if self._release_count < self.config.release_windows:
                 return self._decision(

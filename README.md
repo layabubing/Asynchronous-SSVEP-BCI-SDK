@@ -70,7 +70,11 @@ def on_eeg_chunk(eeg_chunk, first_sample_time):
 - `push()` 返回 `list[AsyncDecision]`；数据不足一个分析窗时返回空列表。
 - `event == "activated"` 时，`command_frequency` 才是一次性控制命令。
 - `state == "active"` 只表示当前锁定状态，不能据此反复执行命令。
-- `event == "released"` 表示退出控制并进入可配置的不响应期。
+- 激活期间识别到其他有效目标时，连续满足 `dwell_windows` 后直接产生新目标的
+  `activated`。确认期间 `active_frequency` 保留旧目标，
+  `candidate_frequency` 表示正在确认的目标；应用程序应限定旧动作的最长保持时间。
+- 连续 `release_windows` 个窗口没有有效候选时，`released` 表示退出控制并进入
+  可配置的不响应期。信号质量失效时，应用程序应立即终止运动并清空历史。
 - `decision.as_dict()` 可直接转换成 JSON、消息队列或日志结构。
 
 离线外部数据接口见

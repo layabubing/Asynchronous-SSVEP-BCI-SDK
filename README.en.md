@@ -87,8 +87,12 @@ Output contract:
   `event == "activated"`.
 - `state == "active"` only reflects the current locked state; do not issue
   commands repeatedly based on it.
-- `event == "released"` means control has been exited and a configurable
-  refractory period begins.
+- A different valid target activates directly after `dwell_windows` consecutive windows.
+  During confirmation, `active_frequency` retains the old target and
+  `candidate_frequency` identifies the pending target. Consumers must bound how long
+  an old action remains valid during this transition.
+- `released` follows `release_windows` windows without a valid candidate and begins
+  the configurable refractory period. Consumers must stop and reset on invalid signal quality.
 - `decision.as_dict()` converts directly to JSON, message-queue, or logging
   structures.
 

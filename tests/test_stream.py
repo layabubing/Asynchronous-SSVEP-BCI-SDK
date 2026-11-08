@@ -82,3 +82,29 @@ def test_channel_count_change_requires_reset() -> None:
     processor.push(np.ones((2, 25)))
     with pytest.raises(ValueError, match="channel count changed"):
         processor.push(np.ones((3, 25)))
+
+
+def test_confirmed_target_changes_activate_without_releasing_control() -> None:
+    config = SSVEPConfig(
+        sampling_rate=250.0,
+        frequencies=(7.5, 9.0, 10.0, 12.0, 15.0, 20.0),
+        dwell_windows=3,
+        release_windows=2,
+    )
+    processor = AsyncSSVEPProcessor(config)
+    targets = (10.0, 7.5, 10.0, 9.0, 20.0, 9.0)
+    signal = np.concatenate(
+        [synthetic_ssvep(frequency, seconds=3.0) for frequency in targets], axis=1
+    )
+    outputs = _push_irregular(processor, signal)
+    activated = [item for item in outputs if item.event is DecisionEvent.ACTIVATED]
+    assert [item.command_frequency for item in activated] == list(targets)
+    assert not any(item.event is DecisionEvent.RELEASED for item in outputs)
+    switching = [
+        item for item in outputs
+        if item.active_frequency is not None
+        and item.candidate_frequency is not None
+        and item.active_frequency != item.candidate_frequency
+    ]
+    assert switching
+    assert all(item.event is DecisionEvent.NONE for item in switching)
