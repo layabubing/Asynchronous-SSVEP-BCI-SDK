@@ -9,7 +9,7 @@ from .cca import (
     orthonormal_time_basis,
 )
 from .config import SSVEPConfig
-from .filters import CCAFilter, FilterBank, detrend_and_notch
+from .filters import CCAFilter, FilterBank, Preprocessor
 from .types import DetectionResult, SignalQuality
 
 FloatArray = NDArray[np.float64]
@@ -20,6 +20,7 @@ class TrainingFreeSSVEPDetector:
 
     def __init__(self, config: SSVEPConfig) -> None:
         self.config = config
+        self._preprocessor = Preprocessor(config)
         self._references = tuple(
             harmonic_reference(
                 frequency,
@@ -108,7 +109,7 @@ class TrainingFreeSSVEPDetector:
             return self._invalid_result(quality)
 
         usable_eeg = eeg[np.asarray(quality.usable_channels)]
-        preprocessed = detrend_and_notch(usable_eeg, self.config)
+        preprocessed = self._preprocessor.apply(usable_eeg)
 
         if self.config.algorithm == "cca":
             assert self._cca_filter is not None

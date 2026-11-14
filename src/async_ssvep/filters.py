@@ -1,5 +1,3 @@
-"""Stable zero-phase preprocessing and FBCCA filter-bank construction."""
-
 from __future__ import annotations
 
 import numpy as np
@@ -21,20 +19,25 @@ def _safe_sosfiltfilt(sos: FloatArray, data: FloatArray) -> FloatArray:
 
 
 def detrend_and_notch(data: FloatArray, config: SSVEPConfig) -> FloatArray:
-    """Linear-detrend a window and apply the optional zero-phase notch."""
+    return Preprocessor(config).apply(data)
 
-    processed = np.asarray(detrend(data, axis=-1, type="linear"), dtype=np.float64)
-    if config.notch_hz is None:
-        return processed
-    numerator, denominator = iirnotch(
-        config.notch_hz,
-        config.notch_quality_factor,
-        fs=config.sampling_rate,
-    )
-    return _safe_sosfiltfilt(
-        np.asarray(tf2sos(numerator, denominator), dtype=np.float64),
-        processed,
-    )
+
+class Preprocessor:
+    def __init__(self, config: SSVEPConfig) -> None:
+        self._notch: FloatArray | None = None
+        if config.notch_hz is not None:
+            numerator, denominator = iirnotch(
+                config.notch_hz,
+                config.notch_quality_factor,
+                fs=config.sampling_rate,
+            )
+            self._notch = np.asarray(tf2sos(numerator, denominator), dtype=np.float64)
+
+    def apply(self, data: FloatArray) -> FloatArray:
+        processed = np.asarray(detrend(data, axis=-1, type="linear"), dtype=np.float64)
+        if self._notch is None:
+            return processed
+        return _safe_sosfiltfilt(self._notch, processed)
 
 
 def design_bandpass(
